@@ -56,9 +56,7 @@ public class Fourier {
 		Core.log(magI2, magI3);
 
 		// Swap, swap, swap.
-		Mat crop = new Mat(magI3,
-				new Rect(0, 0, magI3.cols() & -2, magI3.rows() & -2));
-
+		Mat crop = new Mat(magI3, new Rect(0, 0, magI3.cols() & -2, magI3.rows() & -2));
 		magI4 = crop.clone();
 
 		int cx = magI4.cols() / 2;

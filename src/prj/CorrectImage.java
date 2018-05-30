@@ -30,7 +30,7 @@ public class CorrectImage {
 			for (y = 0; y < width; y++) {
 				dst = 255 * (Math
 						.exp((-1) * (((centerX - x) * (centerX - x) + (centerY - y) * (centerY - y)) / (2 * 2 * 2))));
-				dst_mat.put(x, y, dst);
+				dst_mat.put(x+1, y+1, dst);
 			}
 		}
 		return dst_mat;
