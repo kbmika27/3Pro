@@ -22,7 +22,7 @@ public class Main {
 		Mat grayImage = Mat.zeros(src.size(), CvType.CV_64F);
 		Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGB2GRAY);
 		grayImage.convertTo(grayImage, CvType.CV_32FC1);
-		Imgcodecs.imwrite("gray.jpg", grayImage);
+		//Imgcodecs.imwrite("gray.jpg", grayImage);  //デバッグ用
 		return grayImage;
 	}
 
@@ -60,17 +60,20 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-		DecimalFormat dformat = new DecimalFormat("000");
-		Mat[] F_DST = new Mat[770]; //フーリエ変換させた画像の配列
-		Mat[] CI_DST = new Mat[770]; //正解画像をフーリエ変換させた画像の配列
-		List<Integer> list = new ArrayList<>(); //画像の座標テキスト
+
 		File file;
-		Mat src;
+		Mat src;     //入力画像
+		Mat[] f_dst = new Mat[471];        //フーリエした画像
+		Mat[] f_real_dst = new Mat[471];    //フーリエ変換した画像の実部
+		Mat[] f_img_dst = new Mat[471];     //フーリエ変換した画像の虚部
+		Mat[] ci_dst = new Mat[471];        //正解画像をフーリエした画像
 
 		//座標を入れたリストの作成
+		List<Integer> list = new ArrayList<>(); //画像の座標テキストをリストに入れたもの
 		list = loadText();
 
-		//画像を読み込み変換
+		//画像を読み込み変換する
+		DecimalFormat dformat = new DecimalFormat("000");   //数字の表記を変える
 		for (int i = 0; i < 471; i++) {
 			String filename = "David/img/0" + dformat.format(i + 1) + ".jpg";
 
@@ -83,51 +86,51 @@ public class Main {
 
 			//フーリエ変換させる
 			Fourier fft = new Fourier(src, getGray(src));
+
 			//配列に読み込む
-			F_DST[i] = fft.dst;
+			f_dst[i] = fft.dst;
+			f_real_dst[i] = fft.real;
+			f_img_dst[i] = fft.img;
+		    //double[] data = f_img_dst[i].get(1, 1);
+		    //System.out.println(data[0]);  //デバッグ用・虚部の中ってどんな数字が入ってるの
 
 			//正解画像を作ってフーリエ変換させる
 			CorrectImage ci = new CorrectImage(src, list.get(i * 4) + list.get(i * 4 + 2) / 2,
 					list.get(i * 4 + 1) + list.get(i * 4 + 3) / 2);
 			Fourier fci = new Fourier(ci.dst, ci.dst);
+
 			//配列に読み込む
-			CI_DST[i] = fci.dst;
-			//デバッグ用
-			//Imgcodecs.imwrite("CIdst" + i + ".jpg", fci.dst);
+			ci_dst[i] = fci.dst;
+			//Imgcodecs.imwrite("CIdst" + i + ".jpg", fci.dst);   //デバッグ用
 		}
 
 		//画像のサイズを取得
-		int width = F_DST[0].cols(); //320
-		int height = F_DST[0].rows(); //240
+		int width = ci_dst[0].cols(); //320
+		int height = ci_dst[0].rows(); //240
+		//最終的に出したい画像の作成
+		Mat dst = new Mat(height, width, CvType.CV_32FC1);
 
-		Mat dst = new Mat(height, width, CvType.CV_32FC1);  //最終的に出したい画像の作成
+		Mat[] F1 = new Mat[471];
+		Mat[] F2 = new Mat[471];
+		Mat[] F3 = new Mat[471];
+		//Mat[] F4 = new Mat[471];
+		Mat numer = new Mat();    //フーリエ画像の複素共役を保存する配列
+		Mat demor = new Mat();
 
-		double[] F = new double[1];   //フーリエ変換した画像の画素値を保存する変数
-		double[] CI = new double[1];  //正解画像の画素値を保存する変数
-
-		double[][] numer = new double[height][width]; //分子
-		double[][] denom = new double[height][width]; //分母
-		double[][] quotient = new double[height][width];  //商
-
-		//画素位置ごとに計算
-		for (int x = 0; x < height; x++) {
-			for (int y = 0; y < width; y++) {
-				for (int k = 0; k < 471; k++) {
-					F = F_DST[k].get(x , y );
-					CI = CI_DST[k].get(x, y);
-					numer[x][y] += (F[0] * CI[0]);
-					denom[x][y] += (F[0] * F[0]);
-				}
-			}
+		for (int k = 0; k < 471; k++) {
+			//フーリエ画像の複素共益をとる
+			Core.subtract(f_real_dst[k], f_img_dst[k], F1[k]);   //ここでぬるぽエラー
+			//分子のそれぞれの要素を出す
+			Core.gemm(ci_dst[k], F1[k], 1, Mat.zeros(height, width, CvType.CV_32FC1), 0, F2[k], 0);
+			//分母のそれぞれの要素を出す
+			Core.gemm(f_dst[k], F1[k], 1, Mat.zeros(height, width, CvType.CV_32FC1), 0, F3[k], 0);
+			//分子の和
+			Core.add(numer, F1[k], numer);
+			//分母の和
+			Core.add(demor, F3[k], demor);
 		}
+		 Core.divide(numer, demor, dst, CvType.CV_32FC1);
+		 Imgcodecs.imwrite("test.jpg", dst);
 
-		//最適化した画像のそれぞれの値の計算
-		for (int x = 0; x < height; x++) {
-			for (int y = 0; y < width; y++) {
-				quotient[x][y] = numer[x][y] / denom[x][y];
-				dst.put(x, y, quotient[x][y]);
-			}
-		}
-		Imgcodecs.imwrite ("test.jpg",dst);
 	}
 }

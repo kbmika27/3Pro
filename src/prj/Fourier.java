@@ -6,24 +6,25 @@ import java.util.List;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.Rect;
 import org.opencv.core.Size;
 
 public class Fourier {
 
 	Mat src;
 	Mat dst;
+	Mat real;
+	Mat img;
 	Mat grayImage;
 
 	//ファイルの読み込み
 	public Fourier(Mat src, Mat grayImage) {
 		this.src = src;
 		this.grayImage = grayImage;
-		dst = getDFT();
+		getDFT();
 	}
 
 
-	private Mat getDFT() {
+	private void getDFT() {
 		// Convert to gray image.
 		int m = Core.getOptimalDFTSize(grayImage.rows());
 		int n = Core.getOptimalDFTSize(grayImage.cols());
@@ -41,7 +42,18 @@ public class Fourier {
 
 		// Calculate DFT, and magnitude.
 		Core.dft(complexI, complexI2);
-		Core.split(complexI2, planes);
+		Core.split(complexI2, planes);  //実部と虚部に分ける
+		real = planes.get(0);  //実部
+		img = planes.get(1);   //虚部
+		dst = complexI2;
+
+		//デバッグ用
+		//Imgcodecs.imwrite("real.jpg", real);
+		//Imgcodecs.imwrite("img.jpg", img);
+
+
+
+		/*
 		Mat mag = new Mat(planes.get(0).size(), planes.get(0).type());
 		Core.magnitude(planes.get(0), planes.get(1), mag);
 
@@ -88,5 +100,6 @@ public class Fourier {
 		magI5.convertTo(realResult, CvType.CV_32FC1);
 
 		return realResult;
+		*/
 	}
 }
