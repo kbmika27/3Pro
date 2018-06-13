@@ -42,9 +42,10 @@ public class Fourier {
 
 		// Calculate DFT, and magnitude.
 		Core.dft(complexI, complexI2);
-		Core.split(complexI2, planes);  //実部と虚部に分ける
+		Core.split(complexI2, planes);  //実部と虚部をplanesに分ける
 		real = planes.get(0);  //実部
 		img = planes.get(1);   //虚部
+
 		dst = complexI2;
 
 		//デバッグ用
