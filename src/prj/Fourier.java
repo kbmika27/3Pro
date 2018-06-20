@@ -45,8 +45,25 @@ public class Fourier {
 		Core.split(complexI2, planes);  //実部と虚部をplanesに分ける
 		real = planes.get(0);  //実部
 		img = planes.get(1);   //虚部
-
 		dst = complexI2;
+
+/*
+		List<Mat> planes2 = new ArrayList<Mat>();
+		planes2.add(real);
+		planes2.add(img);
+		Mat A = Mat.zeros(padded.size(), CvType.CV_32FC1);
+		Mat B = Mat.zeros(padded.size(), CvType.CV_32FC1);
+		Core.merge(planes, A);
+		List<Mat> planes3 = new ArrayList<Mat>();
+
+		Core.idft(A, B);
+		Mat restoredImage = new Mat();
+		Core.split(B, planes3);
+		Core.normalize(planes3.get(0), restoredImage, 0, 255, Core.NORM_MINMAX);
+		Imgcodecs.imwrite("idft.jpg", restoredImage);*/
+
+
+
 
 		//デバッグ用
 		//Imgcodecs.imwrite("real.jpg", real);
