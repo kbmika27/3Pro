@@ -11,9 +11,9 @@ public class GrayImage {
 	Mat grayImage = new Mat();
 
 	//グレースケールに変換
-	public GrayImage(Mat src) {
-		grayImage = Mat.zeros(src.size(), CvType.CV_32F);
-		Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGB2GRAY);
+	public GrayImage(Mat[] src) {
+		grayImage = Mat.zeros(src[0].size(), CvType.CV_32F);
+		Imgproc.cvtColor(src[0], grayImage, Imgproc.COLOR_RGB2GRAY);
 		grayImage.convertTo(grayImage, CvType.CV_32FC1);
 
 		//Imgcodecs.imwrite("gray.jpg", grayImage); //デバッグ用
