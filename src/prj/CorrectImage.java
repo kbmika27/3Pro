@@ -4,7 +4,6 @@ import org.opencv.core.Core;
 import org.opencv.core.Core.MinMaxLocResult;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.imgcodecs.Imgcodecs;
 
 public class CorrectImage {
 
@@ -38,7 +37,7 @@ public class CorrectImage {
 				dst_mat.put(y, x, dst);
 			}
 		}
-		Imgcodecs.imwrite("正解クラスの正解画像.jpg", dst_mat); //デバッグ用
+		//Imgcodecs.imwrite("正解クラスの正解画像.jpg", dst_mat); //デバッグ用
 
 		MinMaxLocResult maxv = Core.minMaxLoc(dst_mat);
 		double ma = maxv.maxVal;

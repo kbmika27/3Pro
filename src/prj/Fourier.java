@@ -7,7 +7,6 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
-import org.opencv.imgcodecs.Imgcodecs;
 
 public class Fourier {
 
@@ -26,7 +25,7 @@ public class Fourier {
 		this.grayImage = new Mat(240, 320, CvType.CV_8UC1);
 		grayImage[0].copyTo(this.grayImage);
 
-		Imgcodecs.imwrite("フーリエクラスの入力画像.jpg", this.src); //デバッグ用
+		//Imgcodecs.imwrite("フーリエクラスの入力画像.jpg", this.src); //デバッグ用
 		getDFT();
 	}
 
@@ -50,10 +49,12 @@ public class Fourier {
 		// Calculate DFT, and magnitude.
 		Core.dft(complexI, complexI2);
 		Core.split(complexI2, planes);  //実部と虚部をplanesに分ける
-		real = planes.get(0);  //実部
-		img = planes.get(1);   //虚部
+		real = planes.get(0).clone();  //実部
+		img = planes.get(1).clone();   //虚部
 		dst = complexI2.clone();
 
+
+/*逆フーリエのテスト
 		Mat Test = Mat.zeros(240, 320, CvType.CV_32FC2);
 		Core.idft(dst, Test);
 		List<Mat> planes1 = new ArrayList<Mat>();
@@ -61,8 +62,9 @@ public class Fourier {
 		Mat test2 = Mat.zeros(240, 320, CvType.CV_8UC1);
 		Core.normalize(planes1.get(0), test2, 0, 255, Core.NORM_MINMAX);
 		//Imgcodecs.imwrite("逆フーリエの画像.jpg", test2);  //デバッグ用
+*/
 
-/*
+/*フーリエ変換の確認テスト
 		List<Mat> planes2 = new ArrayList<Mat>();
 		planes2.add(real);
 		planes2.add(img);

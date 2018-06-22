@@ -1,18 +1,36 @@
 package prj;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 
 public class Main {
 
 	public static int ALL = 471;
+
+	public static BufferedImage convertMatToBufferedImage(Mat m) throws IOException {
+		MatOfByte byteMat = new MatOfByte();
+		Imgcodecs.imencode(".jpg", m, byteMat);
+		InputStream in = new ByteArrayInputStream(byteMat.toArray());
+		return ImageIO.read(in);
+	}
 
 	public static void main(String[] args) throws Exception {
 
@@ -62,59 +80,88 @@ public class Main {
 			//Imgcodecs.imwrite("メインクラスの正解画像のフーリエ.jpg", fci.real);  //デバッグ用
 		}
 
+		//Imgcodecs.imwrite("入力画像.jpg", src[0]);
+
 		//画像のサイズを取得
 		int width = ci_dst[0].cols(); //320
 		int height = ci_dst[0].rows(); //240
 
 		//掛け算したものの出力先
-		Mat[] num = new Mat[ALL];    //分子用の配列
-		Mat[] den = new Mat[ALL];    //分母用の配列
-		Mat NUM = Mat.zeros(height, width, CvType.CV_32FC2);    //分子の和
-		Mat DEN = Mat.zeros(height, width, CvType.CV_32FC2);    //分母の和
-		Mat ANS = new Mat(height, width, CvType.CV_32FC2);    //分子/分母の和
-		Mat IDFT = new Mat();                                 //逆フーリエ後
+		Mat[] num = new Mat[ALL]; //分子用の配列
+		Mat[] den = new Mat[ALL]; //分母用の配列
+		Mat NUM = Mat.zeros(height, width, CvType.CV_32FC2); //分子の和
+		Mat DEN = Mat.zeros(height, width, CvType.CV_32FC2); //分母の和
+		Mat ANS = new Mat(height, width, CvType.CV_32FC2); //分子/分母の和
+		Mat IDFT = new Mat(); //逆フーリエ後
 
+		//最初のフィルター作り
 		for (int f = 0; f < 25; f++) {
-			num[f] = new Mat(height, width, CvType.CV_32FC2);    //初期化
-			den[f] = new Mat(height, width, CvType.CV_32FC2);    //初期化
-			Core.mulSpectrums(ci_dst[f], f_dst[f], num[f], 0, true);   //1枚ずつの分子の計算
-			Core.mulSpectrums(f_dst[f], f_dst[f], den[f], 0, true);    //1枚ずつの分母の計算
-			Core.add(NUM, num[f], NUM);          //分子の和
-			Core.add(DEN, den[f], DEN);          //分母の和
+			num[f] = new Mat(height, width, CvType.CV_32FC2); //初期化
+			den[f] = new Mat(height, width, CvType.CV_32FC2); //初期化
+			Core.mulSpectrums(ci_dst[f], f_dst[f], num[f], 0, true); //1枚ずつの分子の計算
+			Core.mulSpectrums(f_dst[f], f_dst[f], den[f], 0, true); //1枚ずつの分母の計算
+			Core.add(NUM, num[f], NUM); //分子の和
+			Core.add(DEN, den[f], DEN); //分母の和
 		}
 
-		Core.divide(NUM, DEN, ANS);    //分子/分母
+		//トラッキング用のフィルター作り
+		Scalar m = new Scalar(0.125);
+		Scalar n = new Scalar(1 - 0.125);
+		for (int k = 25; k < ALL; k++) {
+			num[k] = new Mat(height, width, CvType.CV_32FC2); //初期化
+			den[k] = new Mat(height, width, CvType.CV_32FC2); //初期化
+			Core.mulSpectrums(ci_dst[k], f_dst[k], num[k], 0, true); //1枚ずつの分子の計算
+			Core.mulSpectrums(f_dst[k], f_dst[k], den[k], 0, true); //1枚ずつの分母の計算
+			Core.multiply(num[k], m, num[k]);
+			Core.multiply(den[k], m, den[k]);
+			Core.multiply(NUM, n, NUM);
+			Core.multiply(DEN, n, DEN);
+			Core.add(NUM, num[k], NUM); //分子の和
+			Core.add(DEN, den[k], DEN); //分母の和
+		}
 
+		Core.divide(NUM, DEN, ANS); //分子/分母
+
+		//フィルターをかける
 		Mat Test = Mat.zeros(height, width, CvType.CV_32FC2);
-		Core.mulSpectrums(f_dst[400], ANS, Test, 0, false);
+		Core.mulSpectrums(f_dst[ALL - 1], ANS, Test, 0, false);
+
 		Core.idft(Test, IDFT);
 		List<Mat> planes = new ArrayList<Mat>();
 		Core.split(IDFT, planes);
 		Mat test2 = Mat.zeros(240, 320, CvType.CV_8UC1);
 		Core.normalize(planes.get(0), test2, 0, 255, Core.NORM_MINMAX);
 
+		//Imgcodecs.imwrite("フィルターをかけた画像.jpg", test2);
 
+		JFrame srcFile = new JFrame();
+		srcFile.getContentPane().add(new JLabel(new ImageIcon(convertMatToBufferedImage(src[0]))));
+		srcFile.setVisible(true);
+		srcFile.pack();
 
+		JFrame idftFile = new JFrame();
+		idftFile.getContentPane().add(new JLabel(new ImageIcon(convertMatToBufferedImage(test2))));
+		idftFile.setVisible(true);
+		idftFile.pack();
 
-
-/*
+		/*フィルターの表示
 		List<Mat> conj = new ArrayList<Mat>();
 		Core.split(ANS, conj);
-		Scalar m = new Scalar(-1);
-		Core.multiply(conj.get(1), m, conj.get(1));
+		Scalar l = new Scalar(-1);
+		Core.multiply(conj.get(1), l, conj.get(1));
 		Core.merge(conj, ANS);
 		Core.idft(ANS, IDFT);
-		List<Mat> planes = new ArrayList<Mat>();
-		Core.split(IDFT, planes);
-		for (int x = 0; x < planes.get(0).rows(); x++) {
-			for (int y = 0; y < planes.get(0).cols(); y++) {
-				double[] s = planes.get(0).get(x, y);
+		List<Mat> planes2 = new ArrayList<Mat>();
+		Core.split(IDFT, planes2);
+		for (int x = 0; x < planes2.get(0).rows(); x++) {
+			for (int y = 0; y < planes2.get(0).cols(); y++) {
+				double[] s = planes2.get(0).get(x, y);
 				double ans = 0;
-				ans = s[0] * 200;
-				planes.get(0).put(x, y, ans);
+				ans = s[0] * 1;
+				planes2.get(0).put(x, y, ans);
 			}
-		}*/
-		Imgcodecs.imwrite("idft.jpg", test2);
+		}
+		Imgcodecs.imwrite("filter.jpg", planes2.get(0));
+		*/
 	}
 }
-
