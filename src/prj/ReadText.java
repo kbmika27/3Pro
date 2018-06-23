@@ -15,6 +15,24 @@ public class ReadText {
 		getText(x);
 	}
 
+	public int getMaxWidthSize() {
+		int max = 0;
+		for (int i = 0; i < Main.ALL; i++) {
+			if (max < list.get(i * 4 + 2))
+				max = list.get(i * 4 + 2);
+		}
+		return max;
+	}
+
+	public int getMaxHeightSize() {
+		int max = 0;
+		for (int i = 0; i < Main.ALL; i++) {
+			if (max < list.get(i * 4 + 3))
+				max = list.get(i * 4 + 3);
+		}
+		return max;
+	}
+
 	//座標テキストの読み込み
 	public void getText(String x) {
 		FileReader fr = null;
