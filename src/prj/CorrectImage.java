@@ -10,6 +10,10 @@ public class CorrectImage {
 	Mat src;
 	Mat dst;
 
+	public CorrectImage() {
+		super();
+	}
+
 	//ファイルの読み込み
 	public CorrectImage(Mat[] src, int centerX, int centerY) {  //横・たて
 

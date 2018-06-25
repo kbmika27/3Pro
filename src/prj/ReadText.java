@@ -17,7 +17,7 @@ public class ReadText {
 
 	public int getMaxWidthSize() {
 		int max = 0;
-		for (int i = 0; i < Main.ALL; i++) {
+		for (int i = 0; i < tme.ALL; i++) {
 			if (max < list.get(i * 4 + 2))
 				max = list.get(i * 4 + 2);
 		}
@@ -26,7 +26,7 @@ public class ReadText {
 
 	public int getMaxHeightSize() {
 		int max = 0;
-		for (int i = 0; i < Main.ALL; i++) {
+		for (int i = 0; i < tme.ALL; i++) {
 			if (max < list.get(i * 4 + 3))
 				max = list.get(i * 4 + 3);
 		}

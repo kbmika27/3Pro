@@ -1,38 +1,90 @@
 package prj;
 
+import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 import org.opencv.core.Core;
 import org.opencv.core.Core.MinMaxLocResult;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
+import org.opencv.core.MatOfRect;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
+import org.opencv.videoio.VideoCapture;
 
-public class Main {
+public class Main extends JPanel {
 
-	public static int ALL = 25;
-	public static int First = 25;
-	public static int width = 0;         //入力画像の横
-	public static int height = 0;        //入力画像の縦
-	public static int facewidth = 0;     //顔の領域の一番大きい横のサイズ
-	public static int faceheight = 0;    //顔の領域の一番大きい縦のサイズ
+	private static final long serialVersionUID = 1L;
+	private BufferedImage image;
+	public List<Mat> src = new ArrayList<Mat>(); //入力画像のリスト
+	public List<Integer> list = new ArrayList<Integer>(); //
+	private static int First = 30;
+	private static int now = 0;
 
+
+	private BufferedImage getimage() {
+		return image;
+	}
+
+	private void setimage(BufferedImage newimage) {
+		image = newimage;
+		return;
+	}
+
+	/**
+	 * Converts/writes a Mat into a BufferedImage.
+	 *
+	 * @param matrix Mat of type CV_8UC3 or CV_8UC1
+	 * @return BufferedImage of type TYPE_3BYTE_BGR or TYPE_BYTE_GRAY
+	 */
+
+	/*
+	public static BufferedImage matToBufferedImage(Mat matrix) {
+		int cols = matrix.cols();
+		int rows = matrix.rows();
+		int elemSize = (int) matrix.elemSize();
+		byte[] data = new byte[cols * rows * elemSize];
+		int type;
+		matrix.get(0, 0, data);
+
+		switch (matrix.channels()) {
+		case 1:
+			type = BufferedImage.TYPE_BYTE_GRAY;
+			break;
+		case 3:
+			type = BufferedImage.TYPE_3BYTE_BGR;
+			// bgr to rgb
+			byte b;
+			for (int i = 0; i < data.length; i = i + 3) {
+				b = data[i];
+				data[i] = data[i + 2];
+				data[i + 2] = b;
+			}
+			break;
+		default:
+			return null;
+		}
+
+
+		BufferedImage image2 = new BufferedImage(cols, rows, type);
+		image2.getRaster().setDataElements(0, 0, cols, rows, data);
+		return image2;
+	}*/
 
 	public static BufferedImage convertMatToBufferedImage(Mat m) throws IOException {
 		MatOfByte byteMat = new MatOfByte();
@@ -41,162 +93,144 @@ public class Main {
 		return ImageIO.read(in);
 	}
 
-	public static Mat WriteRec(Mat m) {
-		MinMaxLocResult max = Core.minMaxLoc(m);
+	public static Mat WriteRec(Mat idft, Mat src, int width, int height) {
+		MinMaxLocResult max = Core.minMaxLoc(idft);
 		double x = max.maxLoc.x;
 		double y = max.maxLoc.y;
-		Imgproc.rectangle(m, new Point(x-facewidth/2, y-faceheight/2), new Point(x+facewidth/2, y+faceheight/2), new Scalar(255, 255, 255), 2);
-		return m;
+		Imgproc.rectangle(src, new Point(x-width/2, y-height/2), new Point(x+width/2, y+height/2), new Scalar(0, 0, 255), 2);
+		return src;
 	}
 
-	public static void Print(Mat m) throws IOException {
-		JFrame frame = new JFrame();
-		frame.getContentPane().add(new JLabel(new ImageIcon(convertMatToBufferedImage(m))));
-		frame.setVisible(true);
-		frame.pack();
+
+	public void paintComponent(Graphics g) {
+		BufferedImage temp = getimage();
+		if (temp != null) {
+			g.drawImage(temp, 10, 10, temp.getWidth(), temp.getHeight(), this);
+		}
 	}
 
-	public static void main(String[] args) throws Exception {
-
-		Camera Cam = new Camera();
-		Cam.Cam();
-
+	public static void main(String args[]) throws IOException {
+		// Load the native library.
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-
-		File file;
-		Mat[] src = new Mat[1]; //入力画像
-		Mat[] f_dst = new Mat[ALL]; //フーリエした画像
-		Mat[] ci_dst = new Mat[ALL]; //正解画像をフーリエした画像
-
-
-		//座標リストの作成
-		ReadText text = new ReadText("Biker/groundtruth_rect.txt");
-		facewidth = text.getMaxWidthSize();
-		faceheight = text.getMaxHeightSize();
-
-		//画像を読み込み変換する
-		DecimalFormat dformat = new DecimalFormat("000"); //数字の表記を変える
-
-		for (int i = 0; i < ALL; i++) {
-			String filename = "Biker/img/0" + dformat.format(i + 1) + ".jpg";
-
-			//入力画像を読み込んでMat型にする
-			file = new File(filename);
-			src[0] = Imgcodecs.imread(file.getAbsolutePath(), Imgcodecs.CV_LOAD_IMAGE_COLOR);
-			if (src[0] == null) {
-				throw new RuntimeException("Can't load image.");
-			}
-			//Imgcodecs.imwrite("メインクラスの入力画像.jpg", src[0]);  //デバッグ用
-
-			//画像のサイズを取得
-			width = src[0].cols(); //320
-			height = src[0].rows(); //240
-
-			//グレースケール変換後の配列
-			Mat[] Grays = new Mat[1];
-			GrayImage GI = new GrayImage(src);
-			Grays[0] = GI.grayImage;
-			//グレースケール画像をフーリエ変換し、配列に読み込む
-			Fourier fft = new Fourier(src, Grays);
-			f_dst[i] = fft.dst;
-
-			//正解画像の配列を作る
-			CorrectImage ci = new CorrectImage(src, text.list.get(i * 4) + text.list.get(i * 4 + 2) / 2,
-					text.list.get(i * 4 + 1) + text.list.get(i * 4 + 3) / 2);
-			Mat[] CI = new Mat[1];
-			CI[0] = ci.dst.clone();
-			//Imgcodecs.imwrite("メインクラスの正解画像.jpg", CI[0]); //デバッグ用
-
-			//正解画像をフーリエ変換し、配列に読み込む
-			Fourier fci = new Fourier(CI, CI);
-			ci_dst[i] = fci.dst;
-			//Imgcodecs.imwrite("メインクラスの正解画像のフーリエ.jpg", fci.real);  //デバッグ用
-		}
-
-		//Imgcodecs.imwrite("入力画像.jpg", src[0]);
-
-		//掛け算したものの出力先
-		Mat[] num = new Mat[ALL]; //分子用の配列
-		Mat[] den = new Mat[ALL]; //分母用の配列
-		Mat NUM = Mat.zeros(height, width, CvType.CV_32FC2); //分子の和
-		Mat DEN = Mat.zeros(height, width, CvType.CV_32FC2); //分母の和
-		Mat ANS = new Mat(height, width, CvType.CV_32FC2); //分子/分母の和
-		Mat IDFT = new Mat(); //逆フーリエ後
+		boolean isFirst = true;
 		List<Mat> planes = new ArrayList<Mat>();
-		Mat[] DST = new Mat[ALL];
-
-		//最初のフィルター作り
-		for (int f = 0; f < First; f++) {
-			num[f] = new Mat(height, width, CvType.CV_32FC2); //初期化
-			den[f] = new Mat(height, width, CvType.CV_32FC2); //初期化
-			DST[f] = Mat.zeros(height, width, CvType.CV_8UC1); //初期化
-
-			Core.mulSpectrums(ci_dst[f], f_dst[f], num[f], 0, true); //1枚ずつの分子の計算
-			Core.mulSpectrums(f_dst[f], f_dst[f], den[f], 0, true); //1枚ずつの分母の計算
-			Core.add(NUM, num[f], NUM); //分子の和
-			Core.add(DEN, den[f], DEN); //分母の和
-			Core.divide(NUM, DEN, ANS); //分子/分母
-
-			//フィルターをかける
-			Core.mulSpectrums(f_dst[f], ANS, DST[f], 0, false);
-
-			Core.idft(DST[f], IDFT);
-			Core.split(IDFT, planes);
-			Core.normalize(planes.get(0), DST[f], 0, 255, Core.NORM_MINMAX);
-			WriteRec(DST[f]);
-			Imgcodecs.imwrite("フィルターをかけた画像"+f+".jpg", DST[f]);
-		}
-
-		//トラッキング用のフィルター作り
+		Mat[] SRC = new Mat[1];
+		Mat[] Grays = new Mat[1];
+		Mat[] CI = new Mat[1];
+		Mat num = new Mat();
+		Mat den = new Mat();
+		Mat NUM = new Mat();
+		Mat DEN = new Mat();
+		Mat ANS = new Mat();
+		Mat DST = new Mat();
 		Scalar m = new Scalar(0.125);
 		Scalar n = new Scalar(1 - 0.125);
-		for (int k = First; k < ALL; k++) {
-			num[k] = new Mat(height, width, CvType.CV_32FC2); //初期化
-			den[k] = new Mat(height, width, CvType.CV_32FC2); //初期化
-			DST[k] = Mat.zeros(height, width, CvType.CV_8UC1); //初期化
+		int facewidth = 0;
+		int faceheight = 0;
+		int ave_width = 0;
+		int ave_height = 0;
+		int count = 0;
 
-			Core.mulSpectrums(ci_dst[k], f_dst[k], num[k], 0, true); //1枚ずつの分子の計算
-			Core.mulSpectrums(f_dst[k], f_dst[k], den[k], 0, true); //1枚ずつの分母の計算
-			Core.multiply(num[k], m, num[k]);
-			Core.multiply(den[k], m, den[k]);
-			Core.multiply(NUM, n, NUM);
-			Core.multiply(DEN, n, DEN);
-			Core.add(NUM, num[k], NUM); //分子の和
-			Core.add(DEN, den[k], DEN); //分母の和
-			Core.divide(NUM, DEN, ANS); //分子/分母
 
-			//フィルターをかける
-			Core.mulSpectrums(f_dst[k], ANS, DST[k], 0, false);
 
-			Core.idft(DST[k], IDFT);
-			Core.split(IDFT, planes);
-			Core.normalize(planes.get(0), DST[k], 0, 255, Core.NORM_MINMAX);
-			WriteRec(DST[k]);
-			//Imgcodecs.imwrite("フィルターをかけた画像"+k+".jpg", DST[k]);
-		}
+		JFrame frame = new JFrame("CameraImage");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(500, 500);
+		Main panel = new Main();
+		frame.setContentPane(panel);
+		frame.setVisible(true);
+		Mat webcam_image = new Mat();
+		BufferedImage temp;
+		VideoCapture capture = new VideoCapture(0);
 
-		//Print(src[0]);
-		Print(DST[ALL-1]);
-		Imgcodecs.imwrite("フィルターをかけた画像.jpg", DST[ALL-1]);
+		if (capture.isOpened()) {
 
-		/*フィルターの表示
-		List<Mat> conj = new ArrayList<Mat>();
-		Core.split(ANS, conj);
-		Scalar l = new Scalar(-1);
-		Core.multiply(conj.get(1), l, conj.get(1));
-		Core.merge(conj, ANS);
-		Core.idft(ANS, IDFT);
-		List<Mat> planes2 = new ArrayList<Mat>();
-		Core.split(IDFT, planes2);
-		for (int x = 0; x < planes2.get(0).rows(); x++) {
-			for (int y = 0; y < planes2.get(0).cols(); y++) {
-				double[] s = planes2.get(0).get(x, y);
-				double ans = 0;
-				ans = s[0] * 1;
-				planes2.get(0).put(x, y, ans);
+				while (true) {
+
+				//ビデオの読み込み
+				capture.read(webcam_image);
+
+				if (!webcam_image.empty()) {
+					//顔認識
+					CascadeClassifier faceDetector = new CascadeClassifier("haarcascade_frontalface_default.xml");
+					MatOfRect faceDetections = new MatOfRect();
+					faceDetector.detectMultiScale(webcam_image, faceDetections);
+
+					SRC[0] = webcam_image.clone();
+					if(isFirst) {
+					num = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
+					den = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
+					NUM = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
+					DEN = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
+					ANS = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
+					DST = Mat.zeros(SRC[0].size(), CvType.CV_8UC1); //初期化
+					isFirst = false;
+					}
+
+
+					//入力画像のフーリエ変換を作る
+					//グレースケール変換
+					GrayImage GI = new GrayImage(SRC);
+					Grays[0] = GI.grayImage;
+					//グレースケール画像をフーリエ変換し、配列に読み込む
+					Fourier fft = new Fourier(SRC, Grays);
+
+						//正解画像のフーリエ変換を作る
+						//顔の範囲取得
+						for (Rect rect : faceDetections.toArray()) {
+							count++;
+							//Imgproc.rectangle(webcam_image, new Point(rect.x, rect.y),
+									//new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 0, 255), 5);
+
+							//正解画像を作る
+							CorrectImage ci = new CorrectImage(SRC, rect.x + rect.width / 2, rect.y + rect.height / 2);
+							//正解画像をフーリエ変換する
+							CI[0] = ci.dst.clone();
+							Fourier fci = new Fourier(CI, CI);
+							Core.mulSpectrums(fci.dst, fft.dst, num, 0, true); //1枚ずつの分子の計算
+							Core.mulSpectrums(fft.dst, fft.dst, den, 0, true); //1枚ずつの分母の計算
+
+							//顔のサイズの平均をとる
+							facewidth += rect.width;
+							faceheight += rect.height;
+							ave_width = facewidth/count;
+							ave_height = faceheight/count;
+
+							if(now < First) {
+								Core.add(NUM, num, NUM); //分子の和
+								Core.add(DEN, den, DEN); //分母の和
+							} else {
+								Core.multiply(num, m, num);
+								Core.multiply(den, m, den);
+								Core.multiply(NUM, n, NUM);
+								Core.multiply(DEN, n, DEN);
+							}
+							Core.add(NUM, num, NUM); //分子の和
+							Core.add(DEN, den, DEN); //分母の和
+						}
+						now++;
+						Core.divide(NUM, DEN, ANS); //分子/分母
+
+						//フィルターをかける
+						Core.mulSpectrums(fft.dst, ANS, DST, 0, false);
+
+						Core.idft(DST, DST);
+						Core.split(DST, planes);
+						Core.normalize(planes.get(0), DST, 0, 255, Core.NORM_MINMAX);
+
+						SRC[0]=WriteRec(DST, SRC[0], ave_width, ave_height);
+
+						Imgproc.resize(SRC[0], SRC[0], new Size(SRC[0].size().width * 0.3, SRC[0].size().height * 0.3));
+						frame.setSize(SRC[0].width() + 40, SRC[0].height() + 60);
+						temp = convertMatToBufferedImage(SRC[0]);
+						panel.setimage(temp);
+						panel.repaint();
+
+				} else {
+					System.out.println(" --(!) No captured frame -- ");
+				}
+
 			}
 		}
-		Imgcodecs.imwrite("filter.jpg", planes2.get(0));
-		*/
 	}
 }
