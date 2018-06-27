@@ -36,7 +36,6 @@ public class Main extends JPanel {
 	private static int First = 30;
 	private static int now = 0;
 
-
 	private BufferedImage getimage() {
 		return image;
 	}
@@ -97,10 +96,10 @@ public class Main extends JPanel {
 		MinMaxLocResult max = Core.minMaxLoc(idft);
 		double x = max.maxLoc.x;
 		double y = max.maxLoc.y;
-		Imgproc.rectangle(src, new Point(x-width/2, y-height/2), new Point(x+width/2, y+height/2), new Scalar(0, 0, 255), 2);
+		Imgproc.rectangle(src, new Point(x - width / 2, y - height / 2), new Point(x + width / 2, y + height / 2),
+				new Scalar(0, 0, 255), 5);
 		return src;
 	}
-
 
 	public void paintComponent(Graphics g) {
 		BufferedImage temp = getimage();
@@ -113,6 +112,7 @@ public class Main extends JPanel {
 		// Load the native library.
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		boolean isFirst = true;
+		boolean makeFilter = true;
 		List<Mat> planes = new ArrayList<Mat>();
 		Mat[] SRC = new Mat[1];
 		Mat[] Grays = new Mat[1];
@@ -131,8 +131,6 @@ public class Main extends JPanel {
 		int ave_height = 0;
 		int count = 0;
 
-
-
 		JFrame frame = new JFrame("CameraImage");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(500, 500);
@@ -145,7 +143,7 @@ public class Main extends JPanel {
 
 		if (capture.isOpened()) {
 
-				while (true) {
+			while (true) {
 
 				//ビデオの読み込み
 				capture.read(webcam_image);
@@ -154,19 +152,22 @@ public class Main extends JPanel {
 					//顔認識
 					CascadeClassifier faceDetector = new CascadeClassifier("haarcascade_frontalface_default.xml");
 					MatOfRect faceDetections = new MatOfRect();
-					faceDetector.detectMultiScale(webcam_image, faceDetections);
 
 					SRC[0] = webcam_image.clone();
-					if(isFirst) {
-					num = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
-					den = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
-					NUM = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
-					DEN = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
-					ANS = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
-					DST = Mat.zeros(SRC[0].size(), CvType.CV_8UC1); //初期化
-					isFirst = false;
-					}
+					Imgproc.resize(SRC[0], SRC[0], new Size(SRC[0].size().width * 0.3, SRC[0].size().height * 0.3));
 
+					faceDetector.detectMultiScale(SRC[0], faceDetections);
+
+					if (isFirst) {
+						System.out.println("フィルター作り開始");
+						num = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
+						den = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
+						NUM = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
+						DEN = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
+						ANS = Mat.zeros(SRC[0].size(), CvType.CV_32FC2); //初期化
+						DST = Mat.zeros(SRC[0].size(), CvType.CV_8UC1); //初期化
+						isFirst = false;
+					}
 
 					//入力画像のフーリエ変換を作る
 					//グレースケール変換
@@ -175,40 +176,52 @@ public class Main extends JPanel {
 					//グレースケール画像をフーリエ変換し、配列に読み込む
 					Fourier fft = new Fourier(SRC, Grays);
 
+					/*メモ
+					 * フィルター作りとトラッキングのフェーズをわける
+					 * 最近傍法で行動のデータを作る
+					 * トラッキングの精度をあげる
+					 * *正規化の方法を変える：資料参考
+					 * *インプシロンかける
+					 * 失敗判定を組み込む
+					 *
+					 * 行動分析フェーズ
+					 * K最近傍法で行動のパターンを読み込む
+					 */
+
+					if (makeFilter) {
 						//正解画像のフーリエ変換を作る
 						//顔の範囲取得
 						for (Rect rect : faceDetections.toArray()) {
 							count++;
-							//Imgproc.rectangle(webcam_image, new Point(rect.x, rect.y),
-									//new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 0, 255), 5);
+							Imgproc.rectangle(SRC[0], new Point(rect.x, rect.y),new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(255, 255, 0), 5);
 
-							//正解画像を作る
-							CorrectImage ci = new CorrectImage(SRC, rect.x + rect.width / 2, rect.y + rect.height / 2);
-							//正解画像をフーリエ変換する
-							CI[0] = ci.dst.clone();
-							Fourier fci = new Fourier(CI, CI);
-							Core.mulSpectrums(fci.dst, fft.dst, num, 0, true); //1枚ずつの分子の計算
-							Core.mulSpectrums(fft.dst, fft.dst, den, 0, true); //1枚ずつの分母の計算
+							if (now < First) {
 
-							//顔のサイズの平均をとる
-							facewidth += rect.width;
-							faceheight += rect.height;
-							ave_width = facewidth/count;
-							ave_height = faceheight/count;
+								//正解画像を作る
+								CorrectImage ci = new CorrectImage(SRC, rect.x + rect.width / 2,
+										rect.y + rect.height / 2);
+								//正解画像をフーリエ変換する
+								CI[0] = ci.dst.clone();
+								Fourier fci = new Fourier(CI, CI);
+								Core.mulSpectrums(fci.dst, fft.dst, num, 0, true); //1枚ずつの分子の計算
+								Core.mulSpectrums(fft.dst, fft.dst, den, 0, true); //1枚ずつの分母の計算
 
-							if(now < First) {
+								//顔のサイズの平均をとる
+								facewidth += rect.width;
+								faceheight += rect.height;
+								ave_width = facewidth / count;
+								ave_height = faceheight / count;
+
 								Core.add(NUM, num, NUM); //分子の和
 								Core.add(DEN, den, DEN); //分母の和
 							} else {
-								Core.multiply(num, m, num);
-								Core.multiply(den, m, den);
-								Core.multiply(NUM, n, NUM);
-								Core.multiply(DEN, n, DEN);
+								makeFilter = false;
 							}
-							Core.add(NUM, num, NUM); //分子の和
-							Core.add(DEN, den, DEN); //分母の和
 						}
 						now++;
+
+					} else {
+						//System.out.println("トラッキング開始");
 						Core.divide(NUM, DEN, ANS); //分子/分母
 
 						//フィルターをかける
@@ -217,14 +230,13 @@ public class Main extends JPanel {
 						Core.idft(DST, DST);
 						Core.split(DST, planes);
 						Core.normalize(planes.get(0), DST, 0, 255, Core.NORM_MINMAX);
+						SRC[0] = WriteRec(DST, SRC[0], ave_width, ave_height);
+					}
 
-						SRC[0]=WriteRec(DST, SRC[0], ave_width, ave_height);
-
-						Imgproc.resize(SRC[0], SRC[0], new Size(SRC[0].size().width * 0.3, SRC[0].size().height * 0.3));
-						frame.setSize(SRC[0].width() + 40, SRC[0].height() + 60);
-						temp = convertMatToBufferedImage(SRC[0]);
-						panel.setimage(temp);
-						panel.repaint();
+					frame.setSize(SRC[0].width() + 40, SRC[0].height() + 40);
+					temp = convertMatToBufferedImage(SRC[0]);
+					panel.setimage(temp);
+					panel.repaint();
 
 				} else {
 					System.out.println(" --(!) No captured frame -- ");
