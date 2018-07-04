@@ -281,7 +281,7 @@ public class Main extends JPanel {
 			}
 			capture.release();
 		}
-		hi.destroyAllWindows();
+		HighGui.destroyAllWindows();
 		pw.close();
 	}
 }
