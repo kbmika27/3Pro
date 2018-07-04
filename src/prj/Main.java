@@ -2,14 +2,16 @@ package prj;
 
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 import org.opencv.core.Core;
@@ -22,6 +24,7 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
@@ -35,6 +38,8 @@ public class Main extends JPanel {
 	public List<Integer> list = new ArrayList<Integer>(); //
 	private static int First = 30;
 	private static int now = 0;
+
+	public static List<Point> data = new ArrayList<Point>();
 
 	private BufferedImage getimage() {
 		return image;
@@ -93,12 +98,17 @@ public class Main extends JPanel {
 	}
 
 	public static Mat WriteRec(Mat idft, Mat src, int width, int height) {
-		MinMaxLocResult max = Core.minMaxLoc(idft);
-		double x = max.maxLoc.x;
-		double y = max.maxLoc.y;
+		Point p = getPos(idft);
+		double x = p.x;
+		double y = p.y;
 		Imgproc.rectangle(src, new Point(x - width / 2, y - height / 2), new Point(x + width / 2, y + height / 2),
 				new Scalar(0, 0, 255), 5);
 		return src;
+	}
+
+	public static Point getPos(Mat m) {
+		MinMaxLocResult max = Core.minMaxLoc(m);
+		return max.maxLoc;
 	}
 
 	public void paintComponent(Graphics g) {
@@ -107,6 +117,10 @@ public class Main extends JPanel {
 			g.drawImage(temp, 10, 10, temp.getWidth(), temp.getHeight(), this);
 		}
 	}
+
+
+
+
 
 	public static void main(String args[]) throws IOException {
 		// Load the native library.
@@ -131,15 +145,24 @@ public class Main extends JPanel {
 		int ave_height = 0;
 		int count = 0;
 
-		JFrame frame = new JFrame("CameraImage");
+		HighGui hi = new HighGui();
+
+		/*JFrame frame = new JFrame("CameraImage");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(500, 500);
 		Main panel = new Main();
 		frame.setContentPane(panel);
-		frame.setVisible(true);
+		frame.setVisible(true);*/
+		hi.namedWindow("Main");
 		Mat webcam_image = new Mat();
-		BufferedImage temp;
+		//BufferedImage temp;
 		VideoCapture capture = new VideoCapture(0);
+
+		 // FileWriterクラスのオブジェクトを生成する
+		 FileWriter file = new FileWriter("data1");
+         // PrintWriterクラスのオブジェクトを生成する
+         PrintWriter pw = new PrintWriter(new BufferedWriter(file));
+
 
 		if (capture.isOpened()) {
 
@@ -149,6 +172,7 @@ public class Main extends JPanel {
 				capture.read(webcam_image);
 
 				if (!webcam_image.empty()) {
+
 					//顔認識
 					CascadeClassifier faceDetector = new CascadeClassifier("haarcascade_frontalface_default.xml");
 					MatOfRect faceDetections = new MatOfRect();
@@ -193,7 +217,8 @@ public class Main extends JPanel {
 						//顔の範囲取得
 						for (Rect rect : faceDetections.toArray()) {
 							count++;
-							Imgproc.rectangle(SRC[0], new Point(rect.x, rect.y),new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(255, 255, 0), 5);
+							Imgproc.rectangle(SRC[0], new Point(rect.x, rect.y),
+									new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(255, 255, 0), 5);
 
 							if (now < First) {
 
@@ -229,20 +254,34 @@ public class Main extends JPanel {
 
 						Core.idft(DST, DST);
 						Core.split(DST, planes);
+						data.add(getPos(planes.get(0)));
+						Point p = getPos(planes.get(0));
+						pw.print((int)p.x);
+						pw.print(",");
+						pw.print((int)p.y);
+						pw.print(",");
+						pw.print("\n");
 						Core.normalize(planes.get(0), DST, 0, 255, Core.NORM_MINMAX);
 						SRC[0] = WriteRec(DST, SRC[0], ave_width, ave_height);
 					}
 
-					frame.setSize(SRC[0].width() + 40, SRC[0].height() + 40);
-					temp = convertMatToBufferedImage(SRC[0]);
+					//frame.setSize(SRC[0].width() + 40, SRC[0].height() + 40);
+					hi.imshow("Main", SRC[0]);
+					/*temp = convertMatToBufferedImage(SRC[0]);
 					panel.setimage(temp);
-					panel.repaint();
-
+					panel.repaint();*/
+					if(hi.waitKey(100)!= -1) {
+						break;
+					}
 				} else {
 					System.out.println(" --(!) No captured frame -- ");
 				}
 
+
 			}
+			capture.release();
 		}
+		hi.destroyAllWindows();
+		pw.close();
 	}
 }
