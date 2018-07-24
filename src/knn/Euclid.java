@@ -1,15 +1,21 @@
 package knn;
 
-import java.awt.Point;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+
+import org.opencv.core.Point;
 
 public class Euclid implements Calc {
 
 	double x, y;
-	double euclid = 100;
-	double ans = 100;
-	Queue<Point> queue;
+	double euclid=100000;
+	Queue<Point>queue;
+	List<Point>copy;
+	//Queue<Point>copy;
+	double eucli=0;
 
 	/*Euclidクラスのインスタンスを生成したときに、
 	 * そのクラス内の変数としてqueueを持つようにコンストラクタに書く
@@ -19,33 +25,37 @@ public class Euclid implements Calc {
 	}
 
 	//実際の計算はここから
-	public void Calc() {
-
+	public double Calc(Sample sample) {
+		
 		//サンプルデータの取得（できたらインターフェース内にかけると良いかも・・・）
-		ListData listt = new ListData();
-		List<List> list = listt.list;
-		Queue<Point> copy = queue;
-
-		//実際の計算
-		for (int j = 0; j < list.size(); j++) {
-			for (int i = 0; i < 20; i += 2) {//listのlistの中身をユークリッドとる
-				Point p = copy.remove();
-				x = p.getX();//入力画像のx
-				y = p.getY();//入力画像のy
-				String objStr1 = list.get(0).get(i).toString();
-				String objStr2 = list.get(0).get(i + 1).toString();
-				double lx = new Double(objStr1).doubleValue();
-				double ly = new Double(objStr2).doubleValue();
-				euclid += (x - lx) * (x - lx) + (y - ly) * (y - ly);//足していく
-
-				//計算結果をリストに入れる
-				DataClass dc = new DataClass(lavel, euclid);  //labelをどこかのタイミングで取得したい
-				distanceData.add(dc);
-
-				//if(euclid>eucli)euclid=eucli;//最小の値を求める
+		//ListData listt = new ListData();
+		List<List<Point>> list = sample.getSampleDatas();//etc 歩くが入ったリスト
+		copy=new ArrayList<Point>();
+		for(int i=0;i<10;i++) {//キューのコピーをリストに入れた
+			copy.add(queue.poll());
 			}
-			//if(ans>euclid)ans=euclid;//listの中で最も小さい値
-		}
-	}
+         for(int i=0;i<copy.size();i++) {
+        	queue.add(copy.get(i)) ;
+         }
+		//実際の計算
+		for (int j = 0; j < list.size(); j++) {//入力のqueueをリストに入れたい
+			for (int i = 0; i < 10; i ++) {//10行と仮定
+				Point p = copy.get(i);//入力画像のi番目
+				//Point p = queue.poll();
+				x = p.x;//入力画像のx
+				y = p.y;//入力画像のy
+				
+				double lx = list.get(j).get(i).x;
+				double ly = list.get(j).get(i).y;
+				eucli += (x - lx) * (x - lx) + (y - ly) * (y - ly);
+				if(j==0) euclid = eucli;
+				if(euclid>eucli) euclid=eucli;
+				
+				//計算結果をリストに入れる
+				//distanceData.add(dc);
 
+			}
+		}
+		return euclid;
+	}
 }

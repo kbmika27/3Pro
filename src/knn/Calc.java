@@ -7,6 +7,6 @@ public interface Calc {
 
 	public List<DataClass> distanceData = new ArrayList<DataClass>();    //距離とそのラベルをひとまとまりにしたクラスのリスト
 
-	void Calc();
+	double Calc(Sample sample);
 
 }

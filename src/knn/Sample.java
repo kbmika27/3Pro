@@ -3,34 +3,29 @@ package knn;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opencv.core.Point;
+
+
+
+
 
 public class Sample {
 
-	List<List> SampleDatas = new ArrayList<List>();  //行動別にデータを集めたリスト
+	
+	List<List<Point>> SampleDatas = new ArrayList<List<Point>>();  //行動別にデータを集めたリスト
 	int m_label;  //ラベル
-
+	
+	public Sample(List<List<Point>> SampleDatas, int m_label) {
+		this.m_label = m_label;
+		this.SampleDatas = SampleDatas;
+	}
+	
 	public int getLabel() {
 		return m_label;
 	}
-
-	public List<List> getDatal() {
+	
+	public List<List<Point>> getSampleDatas(){
 		return SampleDatas;
-	}
-
-	public void SetLabel(int m_label) {
-		this.m_label = m_label;
-	}
-
-	public void SetData(List<List> list) {
-		this.SampleDatas = list;
-	}
-
-	public Sample() {
-		for (int i = 1; i < 3; i++) {
-			Read data = new Read(text);
-			SampleDatas.add(data.getList());
-
-		}
 	}
 
 }

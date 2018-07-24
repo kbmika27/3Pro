@@ -7,9 +7,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opencv.core.Point;
+
+
+
 public class ReadText {
 
 	List<Integer> list = new ArrayList<>();
+	public List<Point> list2 = new ArrayList<Point>();
+	int xx,yy;
 
 	public ReadText(String x) {
 		getText(x);
@@ -32,6 +38,10 @@ public class ReadText {
 		}
 		return max;
 	}
+	public Point getXY(int x,int y) {
+		Point pp=new Point(x,y);
+		return pp;
+	}
 
 	//座標テキストの読み込み
 	public void getText(String x) {
@@ -45,6 +55,14 @@ public class ReadText {
 			String line;
 			while ((line = br.readLine()) != null) {
 				String[] array = line.split(",", 0);
+				//ここから
+				for(int i=0;i<array.length;i+=2) {
+					xx=Integer.parseInt(array[i]);
+					yy=Integer.parseInt(array[i+1]);
+					list2.add(getXY(xx,yy));
+				}
+
+				//ここまで
 				for (String elem : array)
 					list.add(Integer.parseInt(elem));
 			}
