@@ -14,8 +14,6 @@ public class Euclid implements Calc {
 	double euclid=100000;
 	Queue<Point>queue;
 	List<Point>copy;
-	//Queue<Point>copy;
-	double eucli=0;
 
 	/*Euclidクラスのインスタンスを生成したときに、
 	 * そのクラス内の変数としてqueueを持つようにコンストラクタに書く
@@ -26,10 +24,11 @@ public class Euclid implements Calc {
 
 	//実際の計算はここから
 	public double Calc(Sample sample) {
-		
+		System.out.println("samplesize"+sample.SampleDatas.size());
 		//サンプルデータの取得（できたらインターフェース内にかけると良いかも・・・）
 		//ListData listt = new ListData();
-		List<List<Point>> list = sample.getSampleDatas();//etc 歩くが入ったリスト
+		List<List<Point>> list = new ArrayList<List<Point>>();
+		list=sample.getSampleDatas();//etc 歩くが入ったリスト
 		copy=new ArrayList<Point>();
 		for(int i=0;i<10;i++) {//キューのコピーをリストに入れた
 			copy.add(queue.poll());
@@ -39,6 +38,7 @@ public class Euclid implements Calc {
          }
 		//実際の計算
 		for (int j = 0; j < list.size(); j++) {//入力のqueueをリストに入れたい
+			double eucli=0;
 			for (int i = 0; i < 10; i ++) {//10行と仮定
 				Point p = copy.get(i);//入力画像のi番目
 				//Point p = queue.poll();
@@ -47,6 +47,9 @@ public class Euclid implements Calc {
 				
 				double lx = list.get(j).get(i).x;
 				double ly = list.get(j).get(i).y;
+				//if(i==0)System.out.println("data"+(j+1));
+				//System.out.println("x"+list.get(j).get(i).x);
+				//System.out.println("y"+list.get(j).get(i).y);
 				eucli += (x - lx) * (x - lx) + (y - ly) * (y - ly);
 				if(j==0) euclid = eucli;
 				if(euclid>eucli) euclid=eucli;

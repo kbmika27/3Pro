@@ -14,6 +14,7 @@ public  class DTW implements Calc {
 	Queue<Point> x1;
 	List<Point> xx1;
 	List<Point>xx2;
+	double dtw=Double.MAX_VALUE;
 	private static final long serialVersionUID = 1L;
 	
     private double width = 1;
@@ -38,7 +39,6 @@ public  class DTW implements Calc {
 		            table[1][0] = Double.POSITIVE_INFINITY;
 
 		            for (int j = 1; j <= n2; j++) {
-		              //  double cost = Math.abs(x1[i-1] - x2[j-1]);
                     double costx = Math.abs(xx1.get(i-1).x- x2.get(j-1).x);
 	            	 double costy=Math.abs(xx1.get(i-1).y- x2.get(j-1).y);
 	            	 double cost=costx+costy;
@@ -64,8 +64,8 @@ public  class DTW implements Calc {
 	 }
 	//実際の計算はここから
 	public double Calc(Sample x2) {//x1が入力画像のキュー、x2が
-		double d,dtw;
-		dtw=100;//一旦100にしておく
+		double d;
+		System.out.println("samplesize"+x2.SampleDatas.size());
 		xx1=new ArrayList<Point>();//入力のコピー
 		xx2=new ArrayList<Point>();//サンプルをリストに入れる
 		for(int i=0;i<x2.SampleDatas.size();i++) {		

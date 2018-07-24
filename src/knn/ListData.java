@@ -11,10 +11,10 @@ public class ListData {
 
 	int m_label;
 	List<List<Point>> list = new ArrayList<List<Point>>();//リストのリスト
-	
-	public List<List<Point>> Data(int n) {
-		for(int i=n;i<n+3;i++) {
-			String text="data"+i;
+	int numSamples=3;//トレーニングデータの数
+	public List<List<Point>> Data(int labelID) {
+		for(int i=1;i<numSamples+1;i++) {
+			String text="label"+labelID+"/data"+i;
 		ReadText data=new ReadText(text);//data i をリストに追加
 		list.add(data.list2);//data.listはただのpoint型のlist
 		//System.out.println(list.size()+"リストのサイズ");

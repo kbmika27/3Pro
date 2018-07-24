@@ -5,7 +5,7 @@ import java.util.List;
 
 public interface Calc {
 
-	public List<DataClass> distanceData = new ArrayList<DataClass>();    //距離とそのラベルをひとまとまりにしたクラスのリスト
+	public List<Double> distanceData = new ArrayList<Double>();    //距離とそのラベルをひとまとまりにしたクラスのリスト
 
 	double Calc(Sample sample);
 

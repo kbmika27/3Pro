@@ -13,31 +13,32 @@ public class knn {
 	//リストを距離で並び替え、上位k個のラベルを判別
 	//動作を判定する
 
-
-	List<DataClass> list = new ArrayList<DataClass>();
+	int numLabel = 4;//ラベルの数
 	
 	public int ReturnLabel(Queue<Point> queue) {
-		ListData listt = new ListData();
-		int label = 0;
-		for(int i=1; i<13; i+=3) {
-			Sample sample = new Sample(listt.Data(i),label);
-			//インターフェースに飛ばす
-			Euclid euclid = new Euclid(queue);
-			//DTW dtw=new DTW(queue);
-			DataClass dc = new DataClass(label,euclid.Calc(sample));
-			//DataClass dc = new DataClass(label,dtw.Calc(sample));
-			System.out.println(dc.distance);
-			list.add(dc);
+		ListData[] listD = new ListData[numLabel];
+		Sample[] sample = new Sample[numLabel];
+		for(int label=0; label<numLabel; label++) {
+			listD[label] = new ListData();
+			sample[label]= new Sample(listD[label].Data(label),label);
+		}
+		//インターフェースに飛ばす
+		//Euclid euclid = new Euclid(queue);
+		DTW dtw=new DTW(queue);
+		double min = Double.MAX_VALUE;
+		int minLabel = -1;
+		for(int label=0; label<numLabel; label++) {
+			//double result = euclid.Calc(sample[label]);
+			double result = dtw.Calc(sample[label]);
+			System.out.println(result);
+			if(min>result) {
+				min = result;
+				minLabel = label;
+			}
 			System.out.println(label+"label");
-			label++;
 		}
 		
-		int min = 0;
-		for(int i=1; i<list.size(); i++) {
-			if(list.get(min).getDistance()>list.get(i).getDistance()) min = i;
-		}
-		
-		return min;
+		return minLabel;
 	}
 
 }
