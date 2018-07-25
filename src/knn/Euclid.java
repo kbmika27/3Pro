@@ -44,9 +44,10 @@ public class Euclid implements Calc {
 				//Point p = queue.poll();
 				x = p.x;//入力画像のx
 				y = p.y;//入力画像のy
-				
-				double lx = list.get(j).get(i).x;
-				double ly = list.get(j).get(i).y;
+				double oldx=x;
+				double oldy=y;
+				double lx = list.get(j).get(i).x;//サンプルのx
+				double ly = list.get(j).get(i).y;//サンプルのy
 				//if(i==0)System.out.println("data"+(j+1));
 				//System.out.println("x"+list.get(j).get(i).x);
 				//System.out.println("y"+list.get(j).get(i).y);

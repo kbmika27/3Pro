@@ -25,8 +25,8 @@ public  class DTW implements Calc {
 		this.x1 = x1;
 	}
 	 public static  double d(List<Point>xx1,List<Point> x2) {
-		        int n1 = xx1.size();
-		        int n2 = x2.size();
+		        int n1 = xx1.size();//入力画像のリスト
+		        int n2 = x2.size();//サンプルのリスト
 		        double[][] table = new double[2][n2 + 1];
 
 		        table[0][0] = 0;
@@ -68,9 +68,11 @@ public  class DTW implements Calc {
 		//System.out.println("samplesize"+x2.SampleDatas.size());
 		xx1=new ArrayList<Point>();//入力のコピー
 		xx2=new ArrayList<Point>();//サンプルをリストに入れる
-		for(int i=0;i<x2.SampleDatas.size();i++) {		
-	    xx1.add(x1.poll());//取り出して削除;
-	    xx2=x2.SampleDatas.get(i);
+		for(int i=0;i<x1.size();i++) {//入力画像をxx1に入れる
+			xx1.add(x1.poll());//取り出して削除;
+		}
+		for(int i=0;i<x2.SampleDatas.size();i++) {	//ここは合ってる	 18まで回してる
+	    xx2=x2.SampleDatas.get(i);//i番目のデータ
 	    d=d(xx1,xx2);
 	    if(i==0)dtw=d;
 	    if(d<dtw)dtw=d;
