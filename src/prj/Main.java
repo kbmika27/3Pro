@@ -163,7 +163,7 @@ public class Main extends JPanel {
 		VideoCapture capture = new VideoCapture(0);
 
 		 // FileWriterクラスのオブジェクトを生成する
-		 FileWriter file = new FileWriter("data13");
+		 FileWriter file = new FileWriter("data2");
          // PrintWriterクラスのオブジェクトを生成する
          PrintWriter pw = new PrintWriter(new BufferedWriter(file));
 
@@ -270,16 +270,18 @@ public class Main extends JPanel {
 						
 						//実装
 						
-						queue.add(getPos(DST));
-						if(queue.size()>10) queue.poll();
+						if(now%5==0)queue.add(getPos(DST));//5フレームごと
+						//queue.add(getPos(DST));
+						if(queue.size()>15) queue.poll();
 						knn k = new knn();
-						if(queue.size()==10) {
+						if(queue.size()==15) {
 							
 							int label = k.ReturnLabel(queue);
 							LabelName ln = new LabelName();
 							String name = ln.Name(label);
 							System.out.println(name);
 						}
+						now++;
 						
 					}
 

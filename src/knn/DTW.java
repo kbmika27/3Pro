@@ -65,13 +65,14 @@ public  class DTW implements Calc {
 	//実際の計算はここから
 	public double Calc(Sample x2) {//x1が入力画像のキュー、x2が
 		double d;
-		System.out.println("samplesize"+x2.SampleDatas.size());
+		//System.out.println("samplesize"+x2.SampleDatas.size());
 		xx1=new ArrayList<Point>();//入力のコピー
 		xx2=new ArrayList<Point>();//サンプルをリストに入れる
 		for(int i=0;i<x2.SampleDatas.size();i++) {		
 	    xx1.add(x1.poll());//取り出して削除;
 	    xx2=x2.SampleDatas.get(i);
 	    d=d(xx1,xx2);
+	    if(i==0)dtw=d;
 	    if(d<dtw)dtw=d;
 		}
 		for(int i=0;i<xx1.size();i++) {//queueに入れ直し
