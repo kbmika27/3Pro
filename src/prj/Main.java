@@ -1,5 +1,6 @@
 package prj;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
@@ -33,6 +34,7 @@ import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.videoio.VideoCapture;
 
 import knn.Euclid;
+import knn.MoveAmount;
 import knn.knn;
 
 public class Main extends JPanel {
@@ -41,7 +43,7 @@ public class Main extends JPanel {
 	private BufferedImage image;
 	public List<Mat> src = new ArrayList<Mat>(); //入力画像のリスト
 	public List<Integer> list = new ArrayList<Integer>(); 
-	private static int First = 30;
+	private static int First = 50;
 	private static int now = 0;
 
 	public static List<Point> data = new ArrayList<Point>();
@@ -146,8 +148,11 @@ public class Main extends JPanel {
 		int ave_width = 0;
 		int ave_height = 0;
 		int count = 0;
+		int label = 4;
+		int label2 = 4;
 		
 		Queue<Point> queue = new ArrayDeque<Point>();
+		Queue<Integer> LabelResult = new ArrayDeque<Integer>();
 
 		HighGui hi = new HighGui();
 
@@ -163,7 +168,7 @@ public class Main extends JPanel {
 		VideoCapture capture = new VideoCapture(0);
 
 		 // FileWriterクラスのオブジェクトを生成する
-		 FileWriter file = new FileWriter("data13");
+		 FileWriter file = new FileWriter("data1");
          // PrintWriterクラスのオブジェクトを生成する
          PrintWriter pw = new PrintWriter(new BufferedWriter(file));
 
@@ -252,9 +257,18 @@ public class Main extends JPanel {
 					} else {
 						//System.out.println("トラッキング開始");
 						Core.divide(NUM, DEN, ANS); //分子/分母
-
 						//フィルターをかける
 						Core.mulSpectrums(fft.dst, ANS, DST, 0, false);
+						
+						//更新
+						Core.mulSpectrums(DST, fft.dst, num, 0, true);
+						Core.mulSpectrums(fft.dst, fft.dst, den, 0, true);
+						Core.multiply(num, m, num);
+						Core.multiply(den, m, den);
+						Core.multiply(NUM, n, NUM);
+						Core.multiply(DEN, n, DEN);
+						Core.add(NUM, num, NUM); //分子の和
+						Core.add(DEN, den, DEN); //分母の和
 
 						Core.idft(DST, DST);
 						Core.split(DST, planes);
@@ -269,20 +283,26 @@ public class Main extends JPanel {
 						SRC[0] = WriteRec(DST, SRC[0], ave_width, ave_height);
 						
 						//実装
-						
+						//if(now%2==0) queue.add(getPos(DST));
 						queue.add(getPos(DST));
-						if(queue.size()>10) queue.poll();
+						if(queue.size()>5) queue.poll();
 						knn k = new knn();
-						if(queue.size()==10) {
-							
-							int label = k.ReturnLabel(queue);
+						if(queue.size()==5) {
+							label = k.ReturnLabel(queue);
 							LabelName ln = new LabelName();
 							String name = ln.Name(label);
-							System.out.println(name);
+							if(label2!=3&&label2!=4&&label==3) {
+								name = ln.Name(label2);
+							}
+							else System.out.println(name);
+							Point writePoint = new Point(SRC[0].width()*0.7,SRC[0].height()*0.8);
+							Imgproc.putText(SRC[0], name, writePoint, Core.FONT_HERSHEY_TRIPLEX, 0.7, new Scalar(0,0,0));
+							if(label!=3) label2 = label;
 						}
 						
+						
 					}
-
+					
 					//frame.setSize(SRC[0].width() + 40, SRC[0].height() + 40);
 					hi.imshow("Main", SRC[0]);
 					/*temp = convertMatToBufferedImage(SRC[0]);

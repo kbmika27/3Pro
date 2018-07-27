@@ -11,7 +11,7 @@ public class ListData {
 
 	int m_label;
 	List<List<Point>> list = new ArrayList<List<Point>>();//リストのリスト
-	int numSamples=3;//トレーニングデータの数
+	int numSamples=7;//トレーニングデータの数
 	public List<List<Point>> Data(int labelID) {
 		for(int i=1;i<numSamples+1;i++) {
 			String text="label"+labelID+"/data"+i;
